@@ -1,0 +1,3 @@
+{"question": "What is the CPI of Rahul Jha?", "expected_answer_terms": ["Rahul Jha"], "expected_source_terms": ["Rahul", "Resume Dashboard"]}
+{"question": "List the projects mentioned in Kaviram's resume.", "expected_answer_terms": ["Kaviram"], "expected_source_terms": ["Kaviram", "cdn/view"]}
+{"question": "What information is available for placement statistics in 2025-26?", "expected_answer_terms": ["placement"], "expected_source_terms": ["stats", "2025"]}
