@@ -77,13 +77,15 @@ function renderMessages() {
 
 function setReplyContext(text) {
   replyContext = text;
-  const previewLimit = 180;
-  const preview = text.length > previewLimit
-    ? `${text.slice(0, previewLimit)}...`
-    : text;
-  elements.replyText.textContent = `Replying to: ${preview}`;
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  const previewLimit = 140;
+  const preview = cleaned.length > previewLimit
+    ? `${cleaned.slice(0, previewLimit)}...`
+    : cleaned;
+  elements.replyText.textContent = `Replying to: ${preview || "(selected text)"}`;
   elements.replyText.title = text;
   elements.replyBar.classList.remove("hidden");
+  elements.messageInput.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function clearReplyContext() {
