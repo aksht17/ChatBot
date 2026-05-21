@@ -137,6 +137,8 @@ def _extract_kwargs(source):
         "follow_links_depth": _source_setting(source, "depth", cfg.LINK_FOLLOW_DEPTH),
         "follow_urls_in_text": _source_setting(source, "follow_urls_in_text", cfg.FOLLOW_URLS_IN_TEXT),
         "max_urls": max_urls,
+        "allowed_domains": _source_setting(source, "allowed_domains", getattr(cfg, "ALLOWED_CRAWL_DOMAINS", [])),
+        "blocked_domains": _source_setting(source, "blocked_domains", getattr(cfg, "BLOCKED_CRAWL_DOMAINS", [])),
         "allow_external_web_crawl": _source_setting(
             source,
             "allow_external_web_crawl",
@@ -197,8 +199,13 @@ def _load_website(source):
     url = source.get("url", "")
     if _is_placeholder(url):
         return []
-    depth = _source_setting(source, "depth", cfg.LINK_FOLLOW_DEPTH)
-    return scrape_url(url, depth=depth)
+    extract_kwargs = _extract_kwargs(source)
+    return scrape_url(
+        url,
+        depth=extract_kwargs["follow_links_depth"],
+        allowed_domains=extract_kwargs["allowed_domains"],
+        blocked_domains=extract_kwargs["blocked_domains"],
+    )
 
 
 def _load_google_drive(source):

@@ -32,8 +32,36 @@ def _clean_url(url):
     return cleaned
 
 
+def _normalize_host(url):
+    host = urlparse(url).hostname or ""
+    return host.lower().lstrip(".")
+
+
+def _domain_matches(host, domain):
+    host = (host or "").lower().lstrip(".")
+    domain = (domain or "").lower().lstrip(".")
+    if not host or not domain:
+        return False
+    return host == domain or host.endswith(f".{domain}")
+
+
+def _is_domain_allowed(url, allowed_domains=None, blocked_domains=None):
+    host = _normalize_host(url)
+    if not host:
+        return False
+
+    blocked = blocked_domains or []
+    if any(_domain_matches(host, domain) for domain in blocked):
+        return False
+
+    allowed = allowed_domains or []
+    if allowed:
+        return any(_domain_matches(host, domain) for domain in allowed)
+    return True
+
+
 def _same_site(url, root_url):
-    return urlparse(url).netloc == urlparse(root_url).netloc
+    return _domain_matches(_normalize_host(url), _normalize_host(root_url))
 
 
 def _join_site_url(current_url, ref):
@@ -144,8 +172,12 @@ def _extract_js_links_from_js(url, text):
     return {_clean_url(link) for link in links}
 
 
-def scrape_url(url, depth=1, max_pages=200):
+def scrape_url(url, depth=1, max_pages=200, allowed_domains=None, blocked_domains=None):
     root_url = _clean_url(url)
+    if not _is_domain_allowed(root_url, allowed_domains, blocked_domains):
+        print(f"Skipping root URL outside crawl policy: {root_url}")
+        return []
+
     visited = set()
     documents = []
 
@@ -156,6 +188,7 @@ def scrape_url(url, depth=1, max_pages=200):
             or len(visited) >= max_pages
             or _should_skip(current_url)
             or not _same_site(current_url, root_url)
+            or not _is_domain_allowed(current_url, allowed_domains, blocked_domains)
         ):
             return
 

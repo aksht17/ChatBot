@@ -43,6 +43,34 @@ DOWNLOAD_EXTENSIONS = (
 _WHISPER_CACHE = {}
 
 
+def _normalize_host(url):
+    host = urlparse(url).hostname or ""
+    return host.lower().lstrip(".")
+
+
+def _domain_matches(host, domain):
+    host = (host or "").lower().lstrip(".")
+    domain = (domain or "").lower().lstrip(".")
+    if not host or not domain:
+        return False
+    return host == domain or host.endswith(f".{domain}")
+
+
+def _is_url_allowed(url, allowed_domains=None, blocked_domains=None):
+    host = _normalize_host(url)
+    if not host:
+        return False
+
+    blocked = blocked_domains or []
+    if any(_domain_matches(host, domain) for domain in blocked):
+        return False
+
+    allowed = allowed_domains or []
+    if allowed:
+        return any(_domain_matches(host, domain) for domain in allowed)
+    return True
+
+
 def _extract_urls(text, max_urls):
     urls = URL_RE.findall(text)
     if max_urls is None:
@@ -50,6 +78,18 @@ def _extract_urls(text, max_urls):
     if isinstance(max_urls, int) and max_urls > 0:
         return urls[:max_urls]
     return []
+
+
+def _strip_blocked_urls_from_text(text, blocked_domains=None):
+    blocked = blocked_domains or []
+    if not blocked:
+        return text
+
+    cleaned = text
+    for url in URL_RE.findall(text):
+        if not _is_url_allowed(url, allowed_domains=None, blocked_domains=blocked):
+            cleaned = cleaned.replace(url, " ")
+    return cleaned
 
 
 def _is_downloadable_url(url):
@@ -90,11 +130,22 @@ def _documents_from_url(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
+    if not _is_url_allowed(url, allowed_domains, blocked_domains):
+        print(f"Skipped URL outside crawl policy: {url}")
+        return []
+
     if not _looks_like_download_url(url):
         if not allow_external_web_crawl:
             return []
-        return scrape_url(url, depth=follow_links_depth)
+        return scrape_url(
+            url,
+            depth=follow_links_depth,
+            allowed_domains=allowed_domains,
+            blocked_domains=blocked_domains,
+        )
 
     try:
         response = requests.get(
@@ -116,6 +167,8 @@ def _documents_from_url(
         follow_urls_in_text=False,
         max_urls=max_urls,
         allow_external_web_crawl=allow_external_web_crawl,
+        allowed_domains=allowed_domains,
+        blocked_domains=blocked_domains,
     )
     for document in documents:
         document["source"] = url
@@ -130,9 +183,11 @@ def documents_from_text(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     documents = []
-    cleaned = text.strip()
+    cleaned = _strip_blocked_urls_from_text(text, blocked_domains).strip()
     if cleaned:
         documents.append({"source": source, "content": cleaned})
 
@@ -144,6 +199,8 @@ def documents_from_text(
                 follow_urls_in_text,
                 max_urls,
                 allow_external_web_crawl,
+                allowed_domains,
+                blocked_domains,
             )
 
     return documents
@@ -156,6 +213,8 @@ def documents_from_dataframe(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     documents = []
     for _, row in df.iterrows():
@@ -170,6 +229,8 @@ def documents_from_dataframe(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
     return documents
 
@@ -181,6 +242,8 @@ def _documents_from_html(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     soup = BeautifulSoup(content, "html.parser")
     text = soup.get_text(separator=" ", strip=True)
@@ -191,12 +254,23 @@ def _documents_from_html(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
     if follow_links_depth > 0:
         for a in soup.find_all("a", href=True):
             link = a["href"]
-            if link.startswith("http") and allow_external_web_crawl:
-                documents += scrape_url(link, depth=follow_links_depth - 1)
+            if (
+                link.startswith("http")
+                and allow_external_web_crawl
+                and _is_url_allowed(link, allowed_domains, blocked_domains)
+            ):
+                documents += scrape_url(
+                    link,
+                    depth=follow_links_depth - 1,
+                    allowed_domains=allowed_domains,
+                    blocked_domains=blocked_domains,
+                )
     return documents
 
 
@@ -207,6 +281,8 @@ def _documents_from_pdf(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     try:
         from pypdf import PdfReader
@@ -226,6 +302,8 @@ def _documents_from_pdf(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
 
 
@@ -236,6 +314,8 @@ def _documents_from_docx(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     try:
         import docx
@@ -252,6 +332,8 @@ def _documents_from_docx(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
 
 
@@ -262,6 +344,8 @@ def _documents_from_pptx(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     try:
         from pptx import Presentation
@@ -283,6 +367,8 @@ def _documents_from_pptx(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
 
 
@@ -293,6 +379,8 @@ def _documents_from_image(
     follow_urls_in_text,
     max_urls,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     try:
         from PIL import Image
@@ -310,6 +398,8 @@ def _documents_from_image(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
 
 
@@ -359,6 +449,8 @@ def _documents_from_media(
     device,
     compute_type,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     try:
         model = _get_whisper_model(model_name, device, compute_type)
@@ -384,6 +476,8 @@ def _documents_from_media(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
     finally:
         try:
@@ -410,6 +504,8 @@ def extract_from_bytes(
     whisper_compute_type="int8",
     archive_depth=1,
     allow_external_web_crawl=True,
+    allowed_domains=None,
+    blocked_domains=None,
 ):
     lower = name.lower()
 
@@ -432,6 +528,9 @@ def extract_from_bytes(
                     whisper_device,
                     whisper_compute_type,
                     archive_depth=archive_depth - 1,
+                    allow_external_web_crawl=allow_external_web_crawl,
+                    allowed_domains=allowed_domains,
+                    blocked_domains=blocked_domains,
                 )
         return documents
 
@@ -444,6 +543,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(".csv"):
@@ -455,6 +556,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith((".html", ".htm")):
@@ -465,6 +568,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(".pdf"):
@@ -475,6 +580,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(".docx"):
@@ -485,6 +592,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(".pptx"):
@@ -495,6 +604,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(IMAGE_EXTENSIONS):
@@ -507,6 +618,8 @@ def extract_from_bytes(
             follow_urls_in_text,
             max_urls,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     if lower.endswith(AUDIO_VIDEO_EXTENSIONS):
@@ -522,6 +635,8 @@ def extract_from_bytes(
             whisper_device,
             whisper_compute_type,
             allow_external_web_crawl,
+            allowed_domains,
+            blocked_domains,
         )
 
     try:
@@ -535,4 +650,6 @@ def extract_from_bytes(
         follow_urls_in_text,
         max_urls,
         allow_external_web_crawl,
+        allowed_domains,
+        blocked_domains,
     )
