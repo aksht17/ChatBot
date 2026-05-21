@@ -64,7 +64,7 @@ WHISPER_COMPUTE_TYPE = "int8"
 CACHE_DIR = ".ingest_cache"
 ENABLE_CACHE = True
 FORCE_REBUILD_CHECKPOINTS = False
-EMBED_BATCH_SIZE = 16
+EMBED_BATCH_SIZE = 20
 EMBED_REQUEST_DELAY_SECONDS = 2.0
 CHUNK_TOKENS = 2000
 CHUNK_OVERLAP_TOKENS = 20
@@ -76,5 +76,5 @@ LLM_MODEL = "llama-3.1-8b-instant"
 
 # ===== RAG SETTINGS =====
 RAG_TOP_K = 10
-SYSTEM_PROMPT = "You are a helpful assistant/chatbot providing information about Swish, the Bengaluru-based foodtech company. Keep it formal, accurate, and interactive with emojis."
+SYSTEM_PROMPT = "You are a official assistant/chatbot providing information on behalf of Swish, (the Bengaluru-based foodtech company). Keep it formal, accurate, and interactive with emojis, keep reply concise and dont give wrong info ."
 
