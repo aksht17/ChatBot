@@ -81,11 +81,23 @@ function renderMessages() {
     const text = document.createElement("div");
     text.className = "message-text";
     text.innerHTML = escapeHtml(message.content);
-    text.addEventListener("mouseup", () => detectSelection(text));
+    text.addEventListener("mouseup", () => {
+      setTimeout(() => detectSelection(text), 10);
+    });
 
     wrapper.appendChild(header);
     wrapper.appendChild(text);
     elements.messages.appendChild(wrapper);
+  });
+  
+  // Add global selection listener to messages container
+  elements.messages.addEventListener("mouseup", () => {
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection.toString().trim().length > 3) {
+        detectSelection(null);
+      }
+    }, 10);
   });
 }
 
@@ -94,44 +106,81 @@ function detectSelection(textElement) {
   const selectedText = selection.toString().trim();
   
   if (selectedText.length > 3) {
-    showSelectionMenu(selectedText, selection);
+    showSelectionMenu(selectedText, selection, textElement);
   } else {
     hideSelectionMenu();
   }
 }
 
-function showSelectionMenu(selectedText, selection) {
+function showSelectionMenu(selectedText, selection, textElement) {
   hideSelectionMenu();
   
   const tooltip = document.createElement("div");
   tooltip.className = "selection-tooltip";
   tooltip.id = "selection-tooltip";
   tooltip.textContent = "📌 Reply to this";
+  tooltip.style.zIndex = "1000";
+  tooltip.style.pointerEvents = "auto";
   
   try {
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
     
-    tooltip.style.left = `${rect.left}px`;
-    tooltip.style.top = `${rect.top - 40}px`;
+    let topPosition = rect.top + scrollTop - 50;
+    let leftPosition = rect.left + (rect.width / 2) - 45; // center horizontally
+    
+    // Ensure tooltip stays within viewport
+    if (leftPosition < 10) {
+      leftPosition = 10;
+    }
+    if (leftPosition + 90 > window.innerWidth) {
+      leftPosition = window.innerWidth - 100;
+    }
+    if (topPosition < 10) {
+      topPosition = rect.bottom + scrollTop + 10; // show below if not enough space above
+    }
+    
+    tooltip.style.position = "fixed";
+    tooltip.style.left = `${leftPosition}px`;
+    tooltip.style.top = `${topPosition}px`;
   } catch (e) {
+    tooltip.style.position = "fixed";
     tooltip.style.left = "50%";
     tooltip.style.top = "50%";
     tooltip.style.transform = "translate(-50%, -50%)";
   }
   
-  tooltip.addEventListener("click", () => {
+  tooltip.addEventListener("click", (e) => {
+    e.stopPropagation();
     setReplyContext(selectedText);
     hideSelectionMenu();
+    selection.removeAllRanges();
   });
   
   document.body.appendChild(tooltip);
+  
+  // Ensure tooltip stays visible
+  tooltip.addEventListener("mouseenter", (e) => {
+    e.stopPropagation();
+  });
 }
 
 function hideSelectionMenu() {
   const existing = document.getElementById("selection-tooltip");
   if (existing) {
     existing.remove();
+  }
+}
+
+function clearSelection() {
+  const selection = window.getSelection();
+  if (selection && selection.removeAllRanges) {
+    try {
+      selection.removeAllRanges();
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
