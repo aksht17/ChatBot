@@ -1,199 +1,173 @@
+import html
 import os
 
 import requests
 import streamlit as st
 
 st.set_page_config(
-        page_title="IITK Placement RAG Chatbot",
+        page_title="IITK Placement Chatbot",
         page_icon="C",
-        layout="wide",
+        layout="centered",
 )
 
 API_BASE_URL = st.secrets.get(
-    "API_BASE_URL",
-    os.getenv("API_BASE_URL", "http://localhost:8000"),
+        "API_BASE_URL",
+        os.getenv("API_BASE_URL", "http://localhost:8000"),
 )
 
 st.markdown(
         """
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600&family=Space+Mono:wght@400;700&display=swap");
 
 :root {
-    --ink: #0f172a;
-    --muted: #475569;
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    --ink: #0b1220;
+    --muted: #667085;
+    --panel: #ffffff;
+    --border: #e5e7eb;
+    --accent: #111827;
+    --chip: #eef2ff;
 }
 
 html, body, [class*="css"] {
-    font-family: "Space Grotesk", sans-serif;
+    font-family: "Sora", sans-serif;
     color: var(--ink);
 }
 
 .stApp {
-    background: radial-gradient(circle at 10% 20%, #fff7ed 0%, transparent 40%),
-        radial-gradient(circle at 90% 10%, #e0f2fe 0%, transparent 35%),
-        linear-gradient(135deg, #f8fafc 0%, #ecfeff 45%, #fef9c3 100%);
+    background: #f6f7fb;
 }
 
-.hero {
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(236, 254, 255, 0.9));
-    border: 1px solid var(--border);
-    border-radius: 28px;
-    padding: 28px 32px;
-    box-shadow: var(--shadow);
-    position: relative;
-    overflow: hidden;
-    animation: rise 0.7s ease both;
+.app-shell {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 8px 80px;
 }
 
-.hero::after {
-    content: "";
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(251, 146, 60, 0.35), transparent 70%);
-    top: -40px;
-    right: -40px;
-    animation: float 8s ease-in-out infinite;
-}
-
-.badge-row {
+.app-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
-.badge {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 12px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: #ffffff;
-}
-
-.main-title {
-    font-size: 40px;
-    font-weight: 700;
+.app-title {
+    font-size: 26px;
+    font-weight: 600;
     letter-spacing: -0.02em;
 }
 
-.subtitle {
-    color: var(--muted);
-    font-size: 16px;
-    margin-top: 6px;
-}
-
-.section-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 24px 0 12px 0;
-}
-
-.card {
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 22px;
-    padding: 20px 22px;
-    border: 1px solid var(--border);
-    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
-    animation: rise 0.6s ease both;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.14);
-}
-
-.card-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-
-.card-note {
-    color: var(--muted);
+.app-subtitle {
     font-size: 14px;
-    margin-bottom: 12px;
+    color: var(--muted);
 }
 
-.card-orange {
-    border-left: 6px solid #f97316;
+.status-chip {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    background: var(--chip);
+    color: #3730a3;
+    border-radius: 999px;
+    border: 1px solid #c7d2fe;
 }
 
-.card-blue {
-    border-left: 6px solid #0ea5e9;
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 12px 0 18px;
 }
 
-.card-green {
-    border-left: 6px solid #22c55e;
+.tool-hint {
+    color: var(--muted);
+    font-size: 13px;
 }
 
-.answer-box {
-    margin-top: 14px;
-    padding: 16px;
-    border-radius: 16px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
+.mini-uploader [data-testid="stFileUploader"] {
+    width: 44px;
 }
 
-div[data-testid="stTextInput"] input,
-div[data-testid="stFileUploader"] section {
-    border-radius: 12px !important;
-    border: 1px solid var(--border) !important;
-    background: #ffffff !important;
+.mini-uploader [data-testid="stFileUploader"] label {
+    display: none;
 }
 
-div.stButton > button {
+.mini-uploader [data-testid="stFileUploaderDropzone"] {
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.mini-uploader [data-testid="stFileUploaderDropzone"] button {
+    width: 38px;
+    height: 38px;
     border-radius: 12px;
-    border: 0;
-    padding: 10px 18px;
-    background: linear-gradient(120deg, #f97316, #fb7185);
-    color: #ffffff;
-    font-weight: 600;
-    box-shadow: 0 10px 24px rgba(249, 115, 22, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    font-size: 0;
+    cursor: pointer;
 }
 
-div.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 28px rgba(249, 115, 22, 0.45);
+.mini-uploader [data-testid="stFileUploaderDropzone"] button::after {
+    content: "+";
+    font-size: 20px;
+    color: var(--accent);
+    line-height: 1;
 }
 
-@keyframes float {
-    0% { transform: translate(0, 0); }
-    50% { transform: translate(-8px, 10px); }
-    100% { transform: translate(0, 0); }
+.mini-uploader [data-testid="stFileUploaderDropzone"] small,
+.mini-uploader [data-testid="stFileUploaderDropzone"] span {
+    display: none !important;
 }
 
-@keyframes rise {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    border-radius: 18px;
+    border: 1px dashed var(--border);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--muted);
+}
+
+.reply-bar {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: #3730a3;
+}
+
+.reply-action button {
+    background: transparent !important;
+    border: none !important;
+    color: #2563eb !important;
+    font-size: 12px !important;
+    padding: 2px 0 !important;
+}
+
+div[data-testid="stChatMessage"] {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 12px 16px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+}
+
+div[data-testid="stChatInput"] textarea {
+    border-radius: 18px !important;
+    border: 1px solid var(--border) !important;
+}
+
+div[data-testid="stChatInput"] {
+    position: sticky;
+    bottom: 0;
+    background: #f6f7fb;
+    padding-top: 8px;
 }
 </style>
-""",
-        unsafe_allow_html=True,
-)
-
-st.markdown(
-        """
-<div class="hero">
-    <div class="badge-row">
-        <span class="badge">FastAPI</span>
-        <span class="badge">Streamlit</span>
-        <span class="badge">RAG Pipeline</span>
-        <span class="badge">Gemini Embeddings</span>
-        <span class="badge">Groq LLM</span>
-    </div>
-    <div class="main-title">IITK Placement RAG Chatbot</div>
-    <div class="subtitle">Upload files, ingest URLs, and ask questions about placement data.</div>
-</div>
 """,
         unsafe_allow_html=True,
 )
@@ -218,48 +192,121 @@ def post_json_request(path, **kwargs):
         st.code(response.text[:2000])
         return None
 
-st.markdown('<div class="section-title">Data intake</div>', unsafe_allow_html=True)
-upload_col, url_col = st.columns(2, gap="large")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-with upload_col:
-    st.markdown('<div class="card card-orange">', unsafe_allow_html=True)
-    st.markdown('<div class="card-title">Upload documents</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="card-note">PDF, DOCX, PPTX, spreadsheets, and text files are supported.</div>',
-        unsafe_allow_html=True,
-    )
-    files = st.file_uploader("Choose files", accept_multiple_files=True)
-    if files and st.button("Upload files", key="upload_btn"):
-        for f in files:
-            post_json_request("/upload", files={"file": (f.name, f.getvalue())})
-        st.success("Uploaded!")
-    st.markdown("</div>", unsafe_allow_html=True)
+if "reply_context" not in st.session_state:
+    st.session_state.reply_context = None
 
-with url_col:
-    st.markdown('<div class="card card-blue">', unsafe_allow_html=True)
-    st.markdown('<div class="card-title">Ingest a URL</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="card-note">Paste a public page or direct file link to ingest content.</div>',
-        unsafe_allow_html=True,
-    )
-    url = st.text_input("Enter a URL", placeholder="https://example.com/data")
-    if url and st.button("Ingest URL", key="ingest_btn"):
-        result = post_json_request("/upload-url", json={"url": url})
-        if result:
-            st.write(result)
-    st.markdown("</div>", unsafe_allow_html=True)
+if "uploaded_files" not in st.session_state:
+    st.session_state.uploaded_files = set()
 
-st.markdown('<div class="section-title">Ask the chatbot</div>', unsafe_allow_html=True)
-st.markdown('<div class="card card-green">', unsafe_allow_html=True)
+if "last_upload_note" not in st.session_state:
+    st.session_state.last_upload_note = ""
+
+st.markdown('<div class="app-shell">', unsafe_allow_html=True)
 st.markdown(
-    '<div class="card-note">Ask about placement stats, companies, or summaries.</div>',
+    f"""
+<div class="app-header">
+  <div>
+    <div class="app-title">IITK Placement Chatbot</div>
+    <div class="app-subtitle">Chat with your placement data. Add files or URLs for extra context.</div>
+  </div>
+  <div class="status-chip">Backend: {html.escape(API_BASE_URL)}</div>
+</div>
+""",
     unsafe_allow_html=True,
 )
-q = st.text_input("Ask a question", placeholder="Example: Which companies hired the most students?")
-if q:
-    result = post_json_request("/chat", json={"question": q})
-    if result:
-        st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-        st.write(result.get("answer", result))
+
+toolbar_col, hint_col = st.columns([0.12, 0.88], vertical_alignment="center")
+with toolbar_col:
+    st.markdown('<div class="mini-uploader">', unsafe_allow_html=True)
+    files = st.file_uploader(
+        "",
+        accept_multiple_files=True,
+        key="file_uploader",
+        label_visibility="collapsed",
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with hint_col:
+    st.markdown(
+        '<div class="tool-hint">Use the + button to add files for ingestion.</div>',
+        unsafe_allow_html=True,
+    )
+    if st.session_state.last_upload_note:
+        st.caption(st.session_state.last_upload_note)
+
+if files:
+    new_files = [f for f in files if f.name not in st.session_state.uploaded_files]
+    if new_files:
+        with st.spinner("Ingesting files..."):
+            uploaded_names = []
+            for f in new_files:
+                result = post_json_request("/upload", files={"file": (f.name, f.getvalue())})
+                if result is not None:
+                    uploaded_names.append(f.name)
+            if uploaded_names:
+                st.session_state.uploaded_files.update(uploaded_names)
+                st.session_state.last_upload_note = f"Uploaded {len(uploaded_names)} file(s)."
+
+with st.expander("Add URL", expanded=False):
+    url = st.text_input("URL", placeholder="https://example.com", label_visibility="collapsed")
+    if url and st.button("Ingest URL", key="ingest_url"):
+        result = post_json_request("/upload-url", json={"url": url})
+        if result:
+            st.session_state.last_upload_note = "URL ingested successfully."
+
+if not st.session_state.messages:
+    st.markdown(
+        '<div class="empty-state">Ask a question to start the conversation.</div>',
+        unsafe_allow_html=True,
+    )
+
+for idx, message in enumerate(st.session_state.messages):
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+        st.markdown('<div class="reply-action">', unsafe_allow_html=True)
+        if st.button("Reply", key=f"reply_{idx}"):
+            st.session_state.reply_context = message["content"]
+            st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+if st.session_state.reply_context:
+    reply_col, clear_col = st.columns([0.85, 0.15])
+    with reply_col:
+        reply_text = html.escape(st.session_state.reply_context)
+        st.markdown(
+            f'<div class="reply-bar">Replying to: {reply_text}</div>',
+            unsafe_allow_html=True,
+        )
+    with clear_col:
+        if st.button("Clear", key="clear_reply"):
+            st.session_state.reply_context = None
+            st.rerun()
+
+prompt = st.chat_input("Message")
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    question = prompt
+    if st.session_state.reply_context:
+        question = (
+            "Use the following context when replying.\n\n"
+            f"Context: {st.session_state.reply_context}\n\n"
+            f"User: {prompt}"
+        )
+
+    result = post_json_request("/chat", json={"question": question})
+    if result is None:
+        answer_text = "Sorry, I could not reach the backend."
+    else:
+        answer_text = result.get("answer", result)
+        if not isinstance(answer_text, str):
+            answer_text = str(answer_text)
+
+    st.session_state.messages.append({"role": "assistant", "content": answer_text})
+    st.session_state.reply_context = None
+    st.rerun()
+
 st.markdown("</div>", unsafe_allow_html=True)
