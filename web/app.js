@@ -280,7 +280,9 @@ async function uploadFiles(files) {
   if (uploadedNames.length) {
     // Track uploaded files in UI
     for (const n of uploadedNames) {
-      if (!uploadedFiles.includes(n)) uploadedFiles.push(n);
+      if (!uploadedFiles.includes(n)) {
+        uploadedFiles.push(n);
+      }
     }
     renderFilesList();
     setStatus(`Uploaded ${uploadedNames.length} file(s).`);
@@ -294,9 +296,10 @@ function renderFilesList() {
   elements.filesList.innerHTML = "";
   if (!uploadedFiles.length) return;
 
-  uploadedFiles.forEach((name, idx) => {
+  uploadedFiles.forEach((name) => {
     const tag = document.createElement("div");
     tag.className = "file-tag";
+    tag.dataset.name = name;
 
     const span = document.createElement("div");
     span.className = "file-tag-name";
@@ -308,7 +311,7 @@ function renderFilesList() {
     del.title = `Delete ${name}`;
     del.innerHTML = "✕";
     del.addEventListener("click", () => {
-      deleteUploadedFile(name, idx);
+      deleteUploadedFile(name);
     });
 
     tag.appendChild(span);
@@ -317,8 +320,16 @@ function renderFilesList() {
   });
 }
 
-async function deleteUploadedFile(name, idx) {
-  setStatus(`Deleting ${name}...`);
+function removeUploadedFile(name) {
+  const nextFiles = uploadedFiles.filter((fileName) => fileName !== name);
+  uploadedFiles.length = 0;
+  uploadedFiles.push(...nextFiles);
+  renderFilesList();
+}
+
+async function deleteUploadedFile(name) {
+  setStatus(`Removing file...`);
+  removeUploadedFile(name);
   try {
     const resp = await fetch(`${API_BASE_URL}/delete-source`, {
       method: "POST",
@@ -326,15 +337,9 @@ async function deleteUploadedFile(name, idx) {
       body: JSON.stringify({ source: name }),
     });
     if (!resp.ok) throw new Error(`Delete failed ${resp.status}`);
-    // remove locally
-    uploadedFiles.splice(idx, 1);
-    renderFilesList();
-    setStatus(`Deleted ${name}`);
+    setStatus(`Removed ${name}`);
   } catch (err) {
-    // If backend delete not available, still remove locally
-    uploadedFiles.splice(idx, 1);
-    renderFilesList();
-    setStatus(`Removed ${name} locally (backend delete failed).`);
+    setStatus(`Removed ${name} locally.`);
   }
 }
 
