@@ -77,7 +77,12 @@ function renderMessages() {
 
 function setReplyContext(text) {
   replyContext = text;
-  elements.replyText.textContent = `Replying to: ${text}`;
+  const previewLimit = 180;
+  const preview = text.length > previewLimit
+    ? `${text.slice(0, previewLimit)}...`
+    : text;
+  elements.replyText.textContent = `Replying to: ${preview}`;
+  elements.replyText.title = text;
   elements.replyBar.classList.remove("hidden");
 }
 
@@ -85,6 +90,7 @@ function clearReplyContext() {
   replyContext = "";
   elements.replyBar.classList.add("hidden");
   elements.replyText.textContent = "";
+  elements.replyText.title = "";
 }
 
 async function sendMessage() {

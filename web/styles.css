@@ -177,6 +177,14 @@ body {
   gap: 12px;
 }
 
+#reply-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .reply-bar.hidden {
   display: none;
 }
