@@ -4,6 +4,7 @@ const API_BASE_URL =
 
 const messages = [];
 let replyContext = "";
+const uploadedFiles = []; // Track uploaded files
 
 const elements = {
   messages: document.getElementById("messages"),
@@ -19,7 +20,8 @@ const elements = {
   urlInput: document.getElementById("url-input"),
   ingestUrl: document.getElementById("ingest-url"),
   statusText: document.getElementById("status-text"),
-  resetChat: document.getElementById("reset-chat")
+  resetChat: document.getElementById("reset-chat"),
+  filesList: document.getElementById("files-list")
 };
 
 function escapeHtml(value) {
@@ -276,9 +278,63 @@ async function uploadFiles(files) {
   }
 
   if (uploadedNames.length) {
+    // Track uploaded files in UI
+    for (const n of uploadedNames) {
+      if (!uploadedFiles.includes(n)) uploadedFiles.push(n);
+    }
+    renderFilesList();
     setStatus(`Uploaded ${uploadedNames.length} file(s).`);
   } else {
     setStatus("Could not upload files.");
+  }
+}
+
+function renderFilesList() {
+  if (!elements.filesList) return;
+  elements.filesList.innerHTML = "";
+  if (!uploadedFiles.length) return;
+
+  uploadedFiles.forEach((name, idx) => {
+    const tag = document.createElement("div");
+    tag.className = "file-tag";
+
+    const span = document.createElement("div");
+    span.className = "file-tag-name";
+    span.textContent = name;
+
+    const del = document.createElement("button");
+    del.className = "file-delete-btn";
+    del.type = "button";
+    del.title = `Delete ${name}`;
+    del.innerHTML = "✕";
+    del.addEventListener("click", () => {
+      deleteUploadedFile(name, idx);
+    });
+
+    tag.appendChild(span);
+    tag.appendChild(del);
+    elements.filesList.appendChild(tag);
+  });
+}
+
+async function deleteUploadedFile(name, idx) {
+  setStatus(`Deleting ${name}...`);
+  try {
+    const resp = await fetch(`${API_BASE_URL}/delete-source`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: name }),
+    });
+    if (!resp.ok) throw new Error(`Delete failed ${resp.status}`);
+    // remove locally
+    uploadedFiles.splice(idx, 1);
+    renderFilesList();
+    setStatus(`Deleted ${name}`);
+  } catch (err) {
+    // If backend delete not available, still remove locally
+    uploadedFiles.splice(idx, 1);
+    renderFilesList();
+    setStatus(`Removed ${name} locally (backend delete failed).`);
   }
 }
 
@@ -361,8 +417,13 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.addEventListener("mousedown", () => {
+document.addEventListener("mousedown", (e) => {
+  // Don't hide the tooltip if clicking inside it
+  if (e.target && e.target.closest && e.target.closest('.selection-tooltip')) {
+    return;
+  }
   hideSelectionMenu();
 });
 
 renderMessages();
+renderFilesList();

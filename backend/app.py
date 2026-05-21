@@ -10,7 +10,7 @@ from content_extractors import AUDIO_VIDEO_EXTENSIONS, IMAGE_EXTENSIONS, extract
 from embedder import embed_texts
 from rag_chain import ask
 from scraper import scrape_url
-from vectorstore import upsert
+from vectorstore import upsert, get_index
 import requests
 
 app = FastAPI()
@@ -34,6 +34,10 @@ class Query(BaseModel):
 
 class UrlIn(BaseModel):
     url: str
+
+
+class DeleteSource(BaseModel):
+    source: str
 
 @app.post("/chat")
 def chat(q: Query):
@@ -160,6 +164,20 @@ async def upload(file: UploadFile):
         return {"status": "no_content", "message": "No text extracted."}
     chunk_count = _ingest_documents(documents)
     return {"status": "uploaded", "chunks": chunk_count}
+
+
+@app.post("/delete-source")
+def delete_source(payload: DeleteSource):
+    try:
+        pinecone_index = get_index()
+        # Delete vectors that have metadata.source == payload.source
+        pinecone_index.delete(filter={"source": payload.source})
+        return {"status": "deleted", "source": payload.source}
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(exc)},
+        )
 
 
 @app.post("/upload-url")
