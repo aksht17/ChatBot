@@ -65,14 +65,74 @@ function renderMessages() {
     header.appendChild(role);
     header.appendChild(replyButton);
 
+    // Show reply context if this message was a reply
+    if (message.replyTo) {
+      const replyIndicator = document.createElement("div");
+      replyIndicator.className = "reply-indicator";
+      const previewLimit = 100;
+      const preview = message.replyTo.length > previewLimit
+        ? `${message.replyTo.slice(0, previewLimit)}...`
+        : message.replyTo;
+      replyIndicator.innerHTML = `<strong>↳ Replying to:</strong> ${escapeHtml(preview)}`;
+      replyIndicator.title = `Replied to: ${message.replyTo}`;
+      wrapper.appendChild(replyIndicator);
+    }
+
     const text = document.createElement("div");
     text.className = "message-text";
     text.innerHTML = escapeHtml(message.content);
+    text.addEventListener("mouseup", () => detectSelection(text));
 
     wrapper.appendChild(header);
     wrapper.appendChild(text);
     elements.messages.appendChild(wrapper);
   });
+}
+
+function detectSelection(textElement) {
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  
+  if (selectedText.length > 3) {
+    showSelectionMenu(selectedText, selection);
+  } else {
+    hideSelectionMenu();
+  }
+}
+
+function showSelectionMenu(selectedText, selection) {
+  hideSelectionMenu();
+  
+  const tooltip = document.createElement("div");
+  tooltip.className = "selection-tooltip";
+  tooltip.id = "selection-tooltip";
+  tooltip.textContent = "📌 Reply to this";
+  
+  try {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    
+    tooltip.style.left = `${rect.left}px`;
+    tooltip.style.top = `${rect.top - 40}px`;
+  } catch (e) {
+    tooltip.style.left = "50%";
+    tooltip.style.top = "50%";
+    tooltip.style.transform = "translate(-50%, -50%)";
+  }
+  
+  tooltip.addEventListener("click", () => {
+    setReplyContext(selectedText);
+    hideSelectionMenu();
+  });
+  
+  document.body.appendChild(tooltip);
+}
+
+function hideSelectionMenu() {
+  const existing = document.getElementById("selection-tooltip");
+  if (existing) {
+    existing.remove();
+  }
 }
 
 function setReplyContext(text) {
@@ -102,7 +162,13 @@ async function sendMessage() {
   }
 
   elements.messageInput.value = "";
-  messages.push({ role: "user", content: prompt });
+  
+  // Store message with optional replyTo context
+  const userMessage = { role: "user", content: prompt };
+  if (replyContext) {
+    userMessage.replyTo = replyContext;
+  }
+  messages.push(userMessage);
   renderMessages();
   setStatus("Sending...");
 
@@ -244,6 +310,10 @@ document.addEventListener("click", (event) => {
   if (!elements.attachPanel.contains(event.target) && !elements.attachButton.contains(event.target)) {
     closeAttachPanel();
   }
+});
+
+document.addEventListener("mousedown", () => {
+  hideSelectionMenu();
 });
 
 renderMessages();
