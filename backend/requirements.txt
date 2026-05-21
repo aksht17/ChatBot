@@ -17,5 +17,4 @@ ffmpeg-python
 faster-whisper
 python-dotenv
 python-multipart
-streamlit
 langsmith

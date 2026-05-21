@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Placement AI Agent</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="chat-panel">
+        <header class="chat-header">
+          <div class="header-left">
+            <div class="avatar">AI</div>
+            <div>
+              <div class="header-title">Placement AI Agent</div>
+              <div class="header-status"><span class="status-dot"></span>24/7 Online</div>
+            </div>
+          </div>
+          <button class="header-action" id="reset-chat" title="Clear chat">Reset</button>
+        </header>
+
+        <div class="chat-body">
+          <div class="empty-state" id="empty-state">Ask a question to start the conversation.</div>
+          <div id="messages"></div>
+        </div>
+
+        <div class="input-shell">
+          <div class="reply-bar hidden" id="reply-bar">
+            <span id="reply-text"></span>
+            <button class="link-button" id="clear-reply">Clear</button>
+          </div>
+
+          <div class="input-actions">
+            <div class="dropdown">
+              <button class="icon-button" id="attach-button" type="button">+</button>
+              <div class="dropdown-panel hidden" id="attach-panel">
+                <label class="panel-title" for="file-input">Upload files</label>
+                <input id="file-input" type="file" multiple />
+
+                <label class="panel-title" for="url-input">Add URL</label>
+                <div class="url-row">
+                  <input id="url-input" type="url" placeholder="https://example.com" />
+                  <button class="primary-button" id="ingest-url" type="button">Ingest</button>
+                </div>
+              </div>
+            </div>
+            <span class="tool-hint" id="status-text">Attach files or a link to add more context.</span>
+          </div>
+
+          <div class="message-row">
+            <textarea id="message-input" rows="1" placeholder="Message"></textarea>
+            <button class="send-button" id="send-button" type="button">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <span>Voice Chat</span>
+        <span>History</span>
+      </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

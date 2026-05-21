@@ -1,4 +1,7 @@
+import os
+
 from fastapi import FastAPI, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -11,6 +14,19 @@ from vectorstore import upsert
 import requests
 
 app = FastAPI()
+
+cors_origins_raw = os.getenv("CORS_ALLOW_ORIGINS", "*")
+cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+if not cors_origins:
+    cors_origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins if "*" not in cors_origins else ["*"],
+    allow_credentials="*" not in cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Query(BaseModel):
     question: str
