@@ -158,47 +158,11 @@ div[data-testid="stChatMessage"] p {
     color: var(--muted);
 }
 
-.mini-uploader [data-testid="stFileUploader"] {
-    width: 36px;
-}
-
-.mini-uploader [data-testid="stFileUploader"] label {
-    display: none;
-}
-
-.mini-uploader [data-testid="stFileUploaderDropzone"] {
-    border: none;
-    padding: 0;
-    background: transparent;
-}
-
-.mini-uploader [data-testid="stFileUploaderDropzone"] button {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: #ffffff;
-    font-size: 0;
-    cursor: pointer;
-}
-
-.mini-uploader [data-testid="stFileUploaderDropzone"] button::after {
-    content: "+";
-    font-size: 18px;
-    color: var(--accent);
-    line-height: 1;
-}
-
-.mini-uploader [data-testid="stFileUploaderDropzone"] small,
-.mini-uploader [data-testid="stFileUploaderDropzone"] span {
-    display: none !important;
-}
-
-.toolbar {
+.input-actions {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 18px;
+    padding: 12px 16px 4px;
     border-top: 1px solid var(--border);
     background: #fafafa;
 }
@@ -206,6 +170,22 @@ div[data-testid="stChatMessage"] p {
 .tool-hint {
     color: var(--muted);
     font-size: 12px;
+}
+
+button[data-testid="stPopoverButton"] {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--border) !important;
+    background: #ffffff !important;
+    font-size: 18px !important;
+    color: var(--accent) !important;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+}
+
+div[data-testid="stPopoverContent"] {
+    padding: 12px !important;
+    border-radius: 12px !important;
 }
 
 .footer-actions {
@@ -309,38 +289,34 @@ for idx, message in enumerate(st.session_state.messages):
 st.markdown(
     """
   </div>
-  <div class="toolbar">
+  <div class="input-actions">
 """,
     unsafe_allow_html=True,
 )
 
-toolbar_col, hint_col = st.columns([0.12, 0.88], vertical_alignment="center")
-with toolbar_col:
-    st.markdown('<div class="mini-uploader">', unsafe_allow_html=True)
-    files = st.file_uploader(
-        "",
-        accept_multiple_files=True,
-        key="file_uploader",
-        label_visibility="collapsed",
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+action_col, hint_col = st.columns([0.12, 0.88], vertical_alignment="center")
+with action_col:
+    with st.popover("+"):
+        files = st.file_uploader(
+            "Upload files",
+            accept_multiple_files=True,
+            key="file_uploader",
+        )
+        url = st.text_input("Add URL", placeholder="https://example.com")
+        if url and st.button("Ingest URL", key="ingest_url"):
+            result = post_json_request("/upload-url", json={"url": url})
+            if result:
+                st.session_state.last_upload_note = "URL ingested successfully."
 
 with hint_col:
     st.markdown(
-        '<div class="tool-hint">Add files or URLs to enrich the chat context.</div>',
+        '<div class="tool-hint">Attach files or a link to add more context.</div>',
         unsafe_allow_html=True,
     )
     if st.session_state.last_upload_note:
         st.caption(st.session_state.last_upload_note)
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-with st.expander("Add URL", expanded=False):
-    url = st.text_input("URL", placeholder="https://example.com", label_visibility="collapsed")
-    if url and st.button("Ingest URL", key="ingest_url"):
-        result = post_json_request("/upload-url", json={"url": url})
-        if result:
-            st.session_state.last_upload_note = "URL ingested successfully."
 
 prompt = st.chat_input("Message")
 if prompt:
