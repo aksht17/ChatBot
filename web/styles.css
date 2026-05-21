@@ -36,6 +36,9 @@ body {
   border: 1px solid var(--border);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 78vh;
 }
 
 .chat-header {
@@ -97,7 +100,9 @@ body {
 
 .chat-body {
   padding: 20px;
-  min-height: 320px;
+  min-height: 240px;
+  flex: 1;
+  overflow-y: auto;
   background: #ffffff;
 }
 
@@ -289,15 +294,6 @@ input[type="url"] {
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
-}
-
-.footer-actions {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  padding: 16px 0 4px;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .hidden {
