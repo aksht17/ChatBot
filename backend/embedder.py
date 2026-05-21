@@ -3,14 +3,17 @@ import time
 from google import genai
 from google.genai import errors
 
-from config import GEMINI_API_KEY, EMBED_MODEL
+from config import EMBED_MODEL, GEMINI_EMBED_API_KEY
 
-client = genai.Client(api_key=GEMINI_API_KEY,http_options={"api_version": "v1"})
+client = genai.Client(api_key=GEMINI_EMBED_API_KEY, http_options={"api_version": "v1"})
 
 
 def embed_texts(texts):
     if not texts:
         return []
+
+    if not GEMINI_EMBED_API_KEY:
+        raise ValueError("GEMINI_EMBED_API_KEY is not set.")
 
     attempts = 0
     delay_seconds = 2

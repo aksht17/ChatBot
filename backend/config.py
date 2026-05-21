@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ===== API KEYS =====
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GEMINI_EMBED_API_KEY = os.getenv("GEMINI_EMBED_API_KEY", os.getenv("GEMINI_API_KEY", ""))
+GEMINI_LLM_API_KEY = os.getenv("GEMINI_LLM_API_KEY", os.getenv("GEMINI_API_KEY", ""))
+# Backward-compatible alias for older imports; not a separate env var.
+GEMINI_API_KEY = GEMINI_LLM_API_KEY or GEMINI_EMBED_API_KEY
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
 PINECONE_ENV = os.getenv("PINECONE_ENV")
 PINECONE_INDEX = os.getenv("PINECONE_INDEX")
@@ -63,18 +65,20 @@ WHISPER_DEVICE = "cpu"
 WHISPER_COMPUTE_TYPE = "int8"
 CACHE_DIR = ".ingest_cache"
 ENABLE_CACHE = True
-FORCE_REBUILD_CHECKPOINTS = False
+FORCE_REBUILD_CHECKPOINTS = True
 EMBED_BATCH_SIZE = 20
 EMBED_REQUEST_DELAY_SECONDS = 2.0
 CHUNK_TOKENS = 2000
 CHUNK_OVERLAP_TOKENS = 20
 
 # ===== MODEL =====
+# Embeddings use the embedding key. Chat/query-time Gemini embedding, if used,
+# should also use the embedding key.
 EMBED_MODEL = "models/gemini-embedding-001"
 EMBED_DIMENSION = 3072
-LLM_MODEL = "llama-3.1-8b-instant"
+LLM_MODEL = "gemini-2.0-flash"
 
 # ===== RAG SETTINGS =====
 RAG_TOP_K = 10
-SYSTEM_PROMPT = "You are the official AI assistant for Swish. Your role is to provide accurate, concise, trustworthy, and professional answers ONLY using the information retrieved from the Swish knowledge base and official Swish documents. STRICT RULES: NEVER behave like a general-purpose AI assistant. NEVER make up information, policies, pricing, features, timelines, or technical details. NEVER answer from your own knowledge if the information is not present in retrieved context. If the retrieved context is insufficient, unclear, outdated, or unrelated: clearly say you could not find verified information politely ask the user to contact the official Swish support team provide official Swish contact details if available in the knowledge base Keep answers SHORT and CUSTOMER-SUPPORT STYLE: Prefer 2–5 sentences Avoid long explanations unless user explicitly asks for detail Do not dump unnecessary information Prioritize: accuracy clarity trustworthiness concise responses Maintain a professional and confident tone like an official company support chatbot. If multiple retrieved documents conflict: say the information appears inconsistent recommend contacting official support for confirmation When answering: use only the retrieved context summarize instead of copying large text blocks avoid technical jargon unless necessary If the user asks unrelated/general questions outside Swish: politely state that you are designed only for Swish-related assistance."
+SYSTEM_PROMPT = "You are the official AI assistant for Swish. Your role is to provide accurate, concise, trustworthy, and professional answers ONLY using the information retrieved from the documents. STRICT RULES: NEVER behave like a general-purpose AI assistant. NEVER make up information, policies, pricing, features, timelines, or technical details. NEVER answer from your own knowledge if the information is not present in retrieved context. If the retrieved context is insufficient, unclear, outdated, or unrelated: clearly say you could not find verified information politely ask the user to contact the official Swish support team provide official Swish contact details if available in the knowledge base Keep answers SHORT and CUSTOMER-SUPPORT STYLE: Prefer 2–5 sentences Avoid long explanations unless user explicitly asks for detail Do not dump unnecessary information Prioritize: accuracy clarity trustworthiness concise responses Maintain a professional and confident tone like an official company support chatbot. If multiple retrieved documents conflict: say the information appears inconsistent recommend contacting official support for confirmation When answering: use only the retrieved context summarize instead of copying large text blocks avoid technical jargon unless necessary If the user asks unrelated/general questions outside Swish: politely state that you are designed only for Swish-related assistance."
 

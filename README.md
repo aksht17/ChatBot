@@ -23,8 +23,8 @@ pip install -r backend/requirements.txt
 Create `.env` at the repo root (do not commit it):
 
 ```dotenv
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
+GEMINI_EMBED_API_KEY=your_gemini_embedding_key
+GEMINI_LLM_API_KEY=your_gemini_llm_key
 PINECONE_API_KEY=your_pinecone_key
 PINECONE_ENV=us-east-1
 PINECONE_INDEX=iitk-placements-3072
@@ -54,7 +54,7 @@ python -m http.server 5173
 2) Root Directory: `backend`
 3) Build Command: `pip install -r requirements.txt`
 4) Start Command: `uvicorn app:app --host 0.0.0.0 --port $PORT`
-5) Add environment variables: `GEMINI_API_KEY`, `GROQ_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENV`, `PINECONE_INDEX`
+5) Add environment variables: `GEMINI_EMBED_API_KEY`, `GEMINI_LLM_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENV`, `PINECONE_INDEX`
 
 ### Vercel (frontend)
 This repo includes a static frontend in `web/` for Vercel deployment.
