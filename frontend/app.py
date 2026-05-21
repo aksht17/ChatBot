@@ -18,75 +18,148 @@ API_BASE_URL = st.secrets.get(
 st.markdown(
         """
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600&family=Space+Mono:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap");
 
 :root {
     --ink: #0b1220;
-    --muted: #667085;
+    --muted: #5b6473;
     --panel: #ffffff;
-    --border: #e5e7eb;
-    --accent: #111827;
-    --chip: #eef2ff;
+    --border: #e7e9ef;
+    --accent: #0f172a;
+    --brand: #f7a928;
+    --brand-2: #ffd27a;
+    --chat-bg: #f2f4fb;
 }
 
 html, body, [class*="css"] {
-    font-family: "Sora", sans-serif;
+    font-family: "Manrope", sans-serif;
     color: var(--ink);
 }
 
 .stApp {
-    background: #f6f7fb;
+    background: radial-gradient(circle at 15% 15%, #eef2ff 0%, transparent 35%),
+        radial-gradient(circle at 85% 10%, #ffe8c7 0%, transparent 40%),
+        #f5f6fb;
 }
 
 .app-shell {
-    max-width: 900px;
+    max-width: 680px;
     margin: 0 auto;
-    padding: 20px 8px 80px;
+    padding: 24px 12px 64px;
 }
 
-.app-header {
+.chat-panel {
+    background: var(--panel);
+    border-radius: 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    padding: 18px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
 }
 
-.app-title {
-    font-size: 26px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-}
-
-.app-subtitle {
-    font-size: 14px;
-    color: var(--muted);
-}
-
-.status-chip {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    padding: 6px 10px;
-    background: var(--chip);
-    color: #3730a3;
-    border-radius: 999px;
-    border: 1px solid #c7d2fe;
-}
-
-.toolbar {
+.header-left {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin: 12px 0 18px;
+    gap: 12px;
 }
 
-.tool-hint {
-    color: var(--muted);
+.avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: #111827;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.header-title {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.header-status {
+    font-size: 12px;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+}
+
+.header-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+}
+
+.chat-body {
+    padding: 20px;
+    min-height: 340px;
+    background: #ffffff;
+}
+
+.reply-bar {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    padding: 8px 12px;
+    border-radius: 12px;
     font-size: 13px;
+    color: #3730a3;
+    margin-bottom: 12px;
+}
+
+.reply-action button {
+    background: transparent !important;
+    border: none !important;
+    color: #2563eb !important;
+    font-size: 12px !important;
+    padding: 2px 0 !important;
+}
+
+div[data-testid="stChatMessage"] {
+    background: var(--chat-bg);
+    border: 1px solid #e6e8f2;
+    border-radius: 16px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+
+div[data-testid="stChatMessage"] p {
+    margin: 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    border-radius: 18px;
+    border: 1px dashed var(--border);
+    background: #f9fafb;
+    color: var(--muted);
 }
 
 .mini-uploader [data-testid="stFileUploader"] {
-    width: 44px;
+    width: 36px;
 }
 
 .mini-uploader [data-testid="stFileUploader"] label {
@@ -100,19 +173,18 @@ html, body, [class*="css"] {
 }
 
 .mini-uploader [data-testid="stFileUploaderDropzone"] button {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     background: #ffffff;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
     font-size: 0;
     cursor: pointer;
 }
 
 .mini-uploader [data-testid="stFileUploaderDropzone"] button::after {
     content: "+";
-    font-size: 20px;
+    font-size: 18px;
     color: var(--accent);
     line-height: 1;
 }
@@ -122,50 +194,39 @@ html, body, [class*="css"] {
     display: none !important;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 40px 16px;
-    border-radius: 18px;
-    border: 1px dashed var(--border);
-    background: rgba(255, 255, 255, 0.7);
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: #fafafa;
+}
+
+.tool-hint {
     color: var(--muted);
+    font-size: 12px;
 }
 
-.reply-bar {
-    background: #eef2ff;
-    border: 1px solid #c7d2fe;
-    padding: 8px 12px;
-    border-radius: 12px;
+.footer-actions {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 14px 0 10px;
+    color: var(--muted);
     font-size: 13px;
-    color: #3730a3;
-}
-
-.reply-action button {
-    background: transparent !important;
-    border: none !important;
-    color: #2563eb !important;
-    font-size: 12px !important;
-    padding: 2px 0 !important;
-}
-
-div[data-testid="stChatMessage"] {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 12px 16px;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
 }
 
 div[data-testid="stChatInput"] textarea {
-    border-radius: 18px !important;
+    border-radius: 16px !important;
     border: 1px solid var(--border) !important;
+    background: #ffffff !important;
 }
 
 div[data-testid="stChatInput"] {
-    position: sticky;
-    bottom: 0;
-    background: #f6f7fb;
-    padding-top: 8px;
+    background: #ffffff;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
 }
 </style>
 """,
@@ -206,14 +267,49 @@ if "last_upload_note" not in st.session_state:
 
 st.markdown('<div class="app-shell">', unsafe_allow_html=True)
 st.markdown(
-    f"""
-<div class="app-header">
-  <div>
-    <div class="app-title">IITK Placement Chatbot</div>
-    <div class="app-subtitle">Chat with your placement data. Add files or URLs for extra context.</div>
+    """
+<div class="chat-panel">
+  <div class="chat-header">
+    <div class="header-left">
+      <div class="avatar">AI</div>
+      <div>
+        <div class="header-title">Placement AI Agent</div>
+        <div class="header-status"><span class="status-dot"></span>24/7 Online</div>
+      </div>
+    </div>
+    <div class="header-action">&#x21bb;</div>
   </div>
-  <div class="status-chip">Backend: {html.escape(API_BASE_URL)}</div>
-</div>
+  <div class="chat-body">
+""",
+    unsafe_allow_html=True,
+)
+
+if st.session_state.reply_context:
+    reply_text = html.escape(st.session_state.reply_context)
+    st.markdown(
+        f'<div class="reply-bar">Replying to: {reply_text}</div>',
+        unsafe_allow_html=True,
+    )
+
+if not st.session_state.messages:
+    st.markdown(
+        '<div class="empty-state">Ask a question to start the conversation.</div>',
+        unsafe_allow_html=True,
+    )
+
+for idx, message in enumerate(st.session_state.messages):
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+        st.markdown('<div class="reply-action">', unsafe_allow_html=True)
+        if st.button("Reply", key=f"reply_{idx}"):
+            st.session_state.reply_context = message["content"]
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown(
+    """
+  </div>
+  <div class="toolbar">
 """,
     unsafe_allow_html=True,
 )
@@ -231,24 +327,13 @@ with toolbar_col:
 
 with hint_col:
     st.markdown(
-        '<div class="tool-hint">Use the + button to add files for ingestion.</div>',
+        '<div class="tool-hint">Add files or URLs to enrich the chat context.</div>',
         unsafe_allow_html=True,
     )
     if st.session_state.last_upload_note:
         st.caption(st.session_state.last_upload_note)
 
-if files:
-    new_files = [f for f in files if f.name not in st.session_state.uploaded_files]
-    if new_files:
-        with st.spinner("Ingesting files..."):
-            uploaded_names = []
-            for f in new_files:
-                result = post_json_request("/upload", files={"file": (f.name, f.getvalue())})
-                if result is not None:
-                    uploaded_names.append(f.name)
-            if uploaded_names:
-                st.session_state.uploaded_files.update(uploaded_names)
-                st.session_state.last_upload_note = f"Uploaded {len(uploaded_names)} file(s)."
+st.markdown("</div>", unsafe_allow_html=True)
 
 with st.expander("Add URL", expanded=False):
     url = st.text_input("URL", placeholder="https://example.com", label_visibility="collapsed")
@@ -256,34 +341,6 @@ with st.expander("Add URL", expanded=False):
         result = post_json_request("/upload-url", json={"url": url})
         if result:
             st.session_state.last_upload_note = "URL ingested successfully."
-
-if not st.session_state.messages:
-    st.markdown(
-        '<div class="empty-state">Ask a question to start the conversation.</div>',
-        unsafe_allow_html=True,
-    )
-
-for idx, message in enumerate(st.session_state.messages):
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
-        st.markdown('<div class="reply-action">', unsafe_allow_html=True)
-        if st.button("Reply", key=f"reply_{idx}"):
-            st.session_state.reply_context = message["content"]
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-if st.session_state.reply_context:
-    reply_col, clear_col = st.columns([0.85, 0.15])
-    with reply_col:
-        reply_text = html.escape(st.session_state.reply_context)
-        st.markdown(
-            f'<div class="reply-bar">Replying to: {reply_text}</div>',
-            unsafe_allow_html=True,
-        )
-    with clear_col:
-        if st.button("Clear", key="clear_reply"):
-            st.session_state.reply_context = None
-            st.rerun()
 
 prompt = st.chat_input("Message")
 if prompt:
@@ -308,5 +365,33 @@ if prompt:
     st.session_state.messages.append({"role": "assistant", "content": answer_text})
     st.session_state.reply_context = None
     st.rerun()
+
+if files:
+    new_files = [f for f in files if f.name not in st.session_state.uploaded_files]
+    if new_files:
+        with st.spinner("Ingesting files..."):
+            uploaded_names = []
+            for f in new_files:
+                result = post_json_request("/upload", files={"file": (f.name, f.getvalue())})
+                if result is not None:
+                    uploaded_names.append(f.name)
+            if uploaded_names:
+                st.session_state.uploaded_files.update(uploaded_names)
+                st.session_state.last_upload_note = f"Uploaded {len(uploaded_names)} file(s)."
+
+if st.session_state.reply_context and st.button("Clear reply", key="clear_reply"):
+    st.session_state.reply_context = None
+    st.rerun()
+
+st.markdown(
+    """
+</div>
+<div class="footer-actions">
+  <span>Voice Chat</span>
+  <span>History</span>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown("</div>", unsafe_allow_html=True)
