@@ -162,9 +162,11 @@ div[data-testid="stChatMessage"] p {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 16px 4px;
+    padding: 10px 16px 6px;
     border-top: 1px solid var(--border);
-    background: #fafafa;
+    border-bottom: 0;
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
 }
 
 .tool-hint {
@@ -198,15 +200,17 @@ div[data-testid="stPopoverContent"] {
 }
 
 div[data-testid="stChatInput"] textarea {
-    border-radius: 16px !important;
+    border-radius: 0 0 16px 16px !important;
     border: 1px solid var(--border) !important;
+    border-top: 0 !important;
     background: #ffffff !important;
 }
 
 div[data-testid="stChatInput"] {
     background: #ffffff;
-    border-top: 1px solid var(--border);
-    padding-top: 10px;
+    border-top: 0;
+    padding-top: 0;
+    margin-top: -6px;
 }
 </style>
 """,
