@@ -44,7 +44,17 @@ _WHISPER_CACHE = {}
 
 
 def _extract_urls(text, max_urls):
-    return URL_RE.findall(text)[:max_urls]
+    urls = URL_RE.findall(text)
+    if max_urls is None:
+        return urls
+    if isinstance(max_urls, int) and max_urls > 0:
+        return urls[:max_urls]
+    return []
+
+
+def _is_downloadable_url(url):
+    path = urlparse(url).path.lower()
+    return path.endswith(DOWNLOAD_EXTENSIONS) or "/cdn/view/" in path
 
 
 def _filename_from_url(url, content_type):
@@ -79,8 +89,11 @@ def _documents_from_url(
     follow_links_depth,
     follow_urls_in_text,
     max_urls,
+    allow_external_web_crawl,
 ):
     if not _looks_like_download_url(url):
+        if not allow_external_web_crawl:
+            return []
         return scrape_url(url, depth=follow_links_depth)
 
     try:
@@ -102,6 +115,7 @@ def _documents_from_url(
         follow_links_depth=follow_links_depth,
         follow_urls_in_text=False,
         max_urls=max_urls,
+        allow_external_web_crawl=allow_external_web_crawl,
     )
     for document in documents:
         document["source"] = url
@@ -109,7 +123,14 @@ def _documents_from_url(
     return documents
 
 
-def documents_from_text(text, source, follow_links_depth, follow_urls_in_text, max_urls):
+def documents_from_text(
+    text,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     documents = []
     cleaned = text.strip()
     if cleaned:
@@ -122,12 +143,20 @@ def documents_from_text(text, source, follow_links_depth, follow_urls_in_text, m
                 follow_links_depth,
                 follow_urls_in_text,
                 max_urls,
+                allow_external_web_crawl,
             )
 
     return documents
 
 
-def documents_from_dataframe(df, source, follow_links_depth, follow_urls_in_text, max_urls):
+def documents_from_dataframe(
+    df,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     documents = []
     for _, row in df.iterrows():
         parts = []
@@ -140,11 +169,19 @@ def documents_from_dataframe(df, source, follow_links_depth, follow_urls_in_text
             follow_links_depth,
             follow_urls_in_text,
             max_urls,
+            allow_external_web_crawl,
         )
     return documents
 
 
-def _documents_from_html(content, source, follow_links_depth, follow_urls_in_text, max_urls):
+def _documents_from_html(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     soup = BeautifulSoup(content, "html.parser")
     text = soup.get_text(separator=" ", strip=True)
     documents = documents_from_text(
@@ -153,16 +190,24 @@ def _documents_from_html(content, source, follow_links_depth, follow_urls_in_tex
         follow_links_depth,
         follow_urls_in_text,
         max_urls,
+        allow_external_web_crawl,
     )
     if follow_links_depth > 0:
         for a in soup.find_all("a", href=True):
             link = a["href"]
-            if link.startswith("http"):
+            if link.startswith("http") and allow_external_web_crawl:
                 documents += scrape_url(link, depth=follow_links_depth - 1)
     return documents
 
 
-def _documents_from_pdf(content, source, follow_links_depth, follow_urls_in_text, max_urls):
+def _documents_from_pdf(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     try:
         from pypdf import PdfReader
     except Exception:
@@ -180,10 +225,18 @@ def _documents_from_pdf(content, source, follow_links_depth, follow_urls_in_text
         follow_links_depth,
         follow_urls_in_text,
         max_urls,
+        allow_external_web_crawl,
     )
 
 
-def _documents_from_docx(content, source, follow_links_depth, follow_urls_in_text, max_urls):
+def _documents_from_docx(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     try:
         import docx
     except Exception:
@@ -198,10 +251,18 @@ def _documents_from_docx(content, source, follow_links_depth, follow_urls_in_tex
         follow_links_depth,
         follow_urls_in_text,
         max_urls,
+        allow_external_web_crawl,
     )
 
 
-def _documents_from_pptx(content, source, follow_links_depth, follow_urls_in_text, max_urls):
+def _documents_from_pptx(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     try:
         from pptx import Presentation
     except Exception:
@@ -221,10 +282,18 @@ def _documents_from_pptx(content, source, follow_links_depth, follow_urls_in_tex
         follow_links_depth,
         follow_urls_in_text,
         max_urls,
+        allow_external_web_crawl,
     )
 
 
-def _documents_from_image(content, source, follow_links_depth, follow_urls_in_text, max_urls):
+def _documents_from_image(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    allow_external_web_crawl=True,
+):
     try:
         from PIL import Image
         import pytesseract
@@ -240,6 +309,7 @@ def _documents_from_image(content, source, follow_links_depth, follow_urls_in_te
         follow_links_depth,
         follow_urls_in_text,
         max_urls,
+        allow_external_web_crawl,
     )
 
 
@@ -279,7 +349,17 @@ def _to_wav(input_path):
     return out_path
 
 
-def _documents_from_media(content, source, follow_links_depth, follow_urls_in_text, max_urls, model_name, device, compute_type):
+def _documents_from_media(
+    content,
+    source,
+    follow_links_depth,
+    follow_urls_in_text,
+    max_urls,
+    model_name,
+    device,
+    compute_type,
+    allow_external_web_crawl=True,
+):
     try:
         model = _get_whisper_model(model_name, device, compute_type)
     except Exception:
@@ -303,6 +383,7 @@ def _documents_from_media(content, source, follow_links_depth, follow_urls_in_te
             follow_links_depth,
             follow_urls_in_text,
             max_urls,
+            allow_external_web_crawl,
         )
     finally:
         try:
@@ -328,6 +409,7 @@ def extract_from_bytes(
     whisper_device="cpu",
     whisper_compute_type="int8",
     archive_depth=1,
+    allow_external_web_crawl=True,
 ):
     lower = name.lower()
 
@@ -355,28 +437,77 @@ def extract_from_bytes(
 
     if lower.endswith((".xlsx", ".xls")):
         df = pd.read_excel(io.BytesIO(content))
-        return documents_from_dataframe(df, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return documents_from_dataframe(
+            df,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(".csv"):
         df = pd.read_csv(io.BytesIO(content))
-        return documents_from_dataframe(df, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return documents_from_dataframe(
+            df,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith((".html", ".htm")):
-        return _documents_from_html(content, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return _documents_from_html(
+            content,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(".pdf"):
-        return _documents_from_pdf(content, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return _documents_from_pdf(
+            content,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(".docx"):
-        return _documents_from_docx(content, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return _documents_from_docx(
+            content,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(".pptx"):
-        return _documents_from_pptx(content, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return _documents_from_pptx(
+            content,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(IMAGE_EXTENSIONS):
         if not enable_ocr:
             return []
-        return _documents_from_image(content, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+        return _documents_from_image(
+            content,
+            f"file:{name}",
+            follow_links_depth,
+            follow_urls_in_text,
+            max_urls,
+            allow_external_web_crawl,
+        )
 
     if lower.endswith(AUDIO_VIDEO_EXTENSIONS):
         if not enable_audio_video:
@@ -390,10 +521,18 @@ def extract_from_bytes(
             whisper_model,
             whisper_device,
             whisper_compute_type,
+            allow_external_web_crawl,
         )
 
     try:
         text = content.decode(errors="ignore")
     except Exception:
         text = ""
-    return documents_from_text(text, f"file:{name}", follow_links_depth, follow_urls_in_text, max_urls)
+    return documents_from_text(
+        text,
+        f"file:{name}",
+        follow_links_depth,
+        follow_urls_in_text,
+        max_urls,
+        allow_external_web_crawl,
+    )
