@@ -1,6 +1,6 @@
 const API_BASE_URL =
   (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ||
-  "http://localhost:8000";
+  "https://chatbot-2o37.onrender.com";
 
 const messages = [];
 let replyContext = "";
