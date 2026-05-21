@@ -1,23 +1,23 @@
 from google import genai
 from google.genai import types
+import requests
 
 from vectorstore import query
 from config import (
     EMBED_DIMENSION,
     EMBED_MODEL,
-    GEMINI_LLM_API_KEY,
+    GEMINI_API_KEY,
+    GROQ_API_KEY,
     LLM_MODEL,
     RAG_TOP_K,
     SYSTEM_PROMPT,
 )
 
-embedding_client = genai.Client(api_key=GEMINI_LLM_API_KEY, http_options={"api_version": "v1"})
+embedding_client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1"})
+GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def embed_query(text):
-    if not GEMINI_LLM_API_KEY:
-        raise ValueError("GEMINI_LLM_API_KEY is not set.")
-
     response = embedding_client.models.embed_content(
         model=EMBED_MODEL,
         contents=[text],
@@ -51,15 +51,23 @@ def ask(question):
     system_prompt = (SYSTEM_PROMPT or "").strip()
     user_prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
 
-    if not GEMINI_LLM_API_KEY:
-        raise ValueError("GEMINI_LLM_API_KEY is not set.")
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": user_prompt})
 
-    response = embedding_client.models.generate_content(
-        model=LLM_MODEL,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt or None,
-            temperature=0.2,
-        ),
+    if not GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY is not set.")
+
+    response = requests.post(
+        GROQ_CHAT_URL,
+        headers={
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"model": LLM_MODEL, "messages": messages},
+        timeout=30,
     )
-    return (response.text or "").strip()
+    response.raise_for_status()
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
